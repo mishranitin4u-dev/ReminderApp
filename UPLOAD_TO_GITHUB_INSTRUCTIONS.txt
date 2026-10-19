@@ -1,0 +1,18 @@
+DAILY REMINDER V2.2 - AUDITED/FIXED GITHUB PACKAGE
+
+1. Extract this ZIP.
+2. Open your GitHub repository (the new repository you created, if you chose to start fresh).
+3. Upload the CONTENTS inside the 'daily_reminder_v22' folder to the ROOT
+   of the repository. Do not upload the outer ZIP file.
+4. Replace/overwrite existing files where prompted.
+5. Commit changes.
+6. Go to Actions.
+7. Open 'Build Daily Reminder APK'.
+8. Click Run workflow, then Run workflow again.
+9. After success, download artifact 'Daily-Reminder-V2.2-Fixed-APK'.
+10. Extract it and install app-release.apk on your Android phone.
+
+IMPORTANT: The .github folder must be uploaded because it contains the build workflow.
+
+
+This package includes source fixes for Dart type issues, sound-specific Android notification channels, caregiver SMS intent visibility, and a more reliable workflow that preserves the custom manifest and sound files while generating Android build scaffolding. The APK build still needs to complete successfully in GitHub Actions before it can be considered verified.

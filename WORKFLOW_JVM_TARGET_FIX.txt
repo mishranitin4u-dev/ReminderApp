@@ -1,0 +1,10 @@
+Daily Reminder V2.2 — Kotlin JVM target fix
+
+This update addresses the GitHub Actions error:
+Inconsistent JVM-target compatibility detected for tasks compileReleaseJavaWithJavac (11) and compileReleaseKotlin (1.8), in :flutter_timezone.
+
+Apply this package by replacing the existing .github/workflows/build-apk.yml in your repository with the one in this package. The workflow removes Gradle cache setup before the generated Gradle files exist and adds a step after `flutter pub get` to align the flutter_timezone plugin's Kotlin JVM target to 11 before building.
+
+The app source and Android manifest/sounds are unchanged from Build Fix 1. This workflow change is a targeted build workaround; a successful APK build still needs to be confirmed in GitHub Actions.
+
+Build Fix 3 supersedes the Kotlin target patch: flutter_timezone is removed from pubspec and main.dart, so the failing plugin is no longer compiled. Timezone is set to Asia/Kolkata for the India-focused initial release.
