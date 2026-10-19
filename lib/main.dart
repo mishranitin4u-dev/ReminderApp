@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -12,10 +11,33 @@ import 'package:timezone/timezone.dart' as tz;
 final FlutterLocalNotificationsPlugin notifications =
     FlutterLocalNotificationsPlugin();
 
-const AndroidNotificationChannel reminderChannel = AndroidNotificationChannel(
-  'daily_reminders',
-  'Daily Reminders',
+const AndroidNotificationChannel defaultReminderChannel = AndroidNotificationChannel(
+  'daily_reminders_default',
+  'Daily Reminders (Default)',
   description: 'Medicine, health, personal and work reminders',
+  importance: Importance.max,
+  playSound: true,
+);
+const AndroidNotificationChannel gentleReminderChannel = AndroidNotificationChannel(
+  'daily_reminders_gentle',
+  'Daily Reminders (Gentle)',
+  description: 'Gentle reminder alarm sound',
+  importance: Importance.max,
+  playSound: true,
+  sound: RawResourceAndroidNotificationSound('gentle'),
+);
+const AndroidNotificationChannel urgentReminderChannel = AndroidNotificationChannel(
+  'daily_reminders_urgent',
+  'Daily Reminders (Urgent)',
+  description: 'Urgent reminder alarm sound',
+  importance: Importance.max,
+  playSound: true,
+  sound: RawResourceAndroidNotificationSound('urgent'),
+);
+const AndroidNotificationChannel caregiverChannel = AndroidNotificationChannel(
+  'caregiver_alerts',
+  'Caregiver Alerts',
+  description: 'Local alerts when a reminder is marked missed',
   importance: Importance.max,
   playSound: true,
 );
@@ -42,12 +64,25 @@ class NotificationService {
 
     final android = notifications.resolvePlatformSpecificImplementation<
         AndroidFlutterLocalNotificationsPlugin>();
-    await android?.createNotificationChannel(reminderChannel);
+    await android?.createNotificationChannel(defaultReminderChannel);
+    await android?.createNotificationChannel(gentleReminderChannel);
+    await android?.createNotificationChannel(urgentReminderChannel);
+    await android?.createNotificationChannel(caregiverChannel);
     await android?.requestNotificationsPermission();
     await android?.requestExactAlarmsPermission();
   }
 
   static AndroidNotificationDetails _androidDetails(Reminder reminder) {
+    final channelId = switch (reminder.alarmSound) {
+      'Gentle' => 'daily_reminders_gentle',
+      'Urgent' => 'daily_reminders_urgent',
+      _ => 'daily_reminders_default',
+    };
+    final channelName = switch (reminder.alarmSound) {
+      'Gentle' => 'Daily Reminders (Gentle)',
+      'Urgent' => 'Daily Reminders (Urgent)',
+      _ => 'Daily Reminders (Default)',
+    };
     AndroidNotificationSound? sound;
     if (reminder.alarmSound == 'Gentle') {
       sound = const RawResourceAndroidNotificationSound('gentle');
@@ -55,8 +90,8 @@ class NotificationService {
       sound = const RawResourceAndroidNotificationSound('urgent');
     }
     return AndroidNotificationDetails(
-      'daily_reminders',
-      'Daily Reminders',
+      channelId,
+      channelName,
       channelDescription: 'Medicine, health, personal and work reminders',
       importance: Importance.max,
       priority: Priority.high,
@@ -80,6 +115,8 @@ class NotificationService {
       when,
       NotificationDetails(android: _androidDetails(reminder)),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       payload: 'open:${reminder.id}',
       matchDateTimeComponents: _matchComponents(reminder),
     );
@@ -95,6 +132,8 @@ class NotificationService {
       tz.TZDateTime.now(tz.local).add(Duration(minutes: minutes)),
       NotificationDetails(android: _androidDetails(reminder)),
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      uiLocalNotificationDateInterpretation:
+          UILocalNotificationDateInterpretation.absoluteTime,
       payload: 'snooze:${reminder.id}',
     );
   }
@@ -147,13 +186,13 @@ class NotificationService {
 
     if (r.repeat == 'Monthly') {
       final day = r.dayOfMonth ?? now.day;
-      var d = day.clamp(1, DateTime(now.year, now.month + 1, 0).day);
+      var d = day.clamp(1, DateTime(now.year, now.month + 1, 0).day).toInt();
       candidate = tz.TZDateTime(tz.local, now.year, now.month, d,
           r.time.hour, r.time.minute);
       if (!candidate.isAfter(now)) {
         final nextMonth = now.month == 12 ? 1 : now.month + 1;
         final nextYear = now.month == 12 ? now.year + 1 : now.year;
-        d = day.clamp(1, DateTime(nextYear, nextMonth + 1, 0).day);
+        d = day.clamp(1, DateTime(nextYear, nextMonth + 1, 0).day).toInt();
         candidate = tz.TZDateTime(tz.local, nextYear, nextMonth, d,
             r.time.hour, r.time.minute);
       }
@@ -242,8 +281,10 @@ class ReminderStore {
 
   static Future<bool> easyMode() async =>
       (await SharedPreferences.getInstance()).getBool(_easy) ?? false;
-  static Future<void> setEasyMode(bool v) async =>
-      (await SharedPreferences.getInstance()).setBool(_easy, v);
+  static Future<void> setEasyMode(bool v) async {
+    final p = await SharedPreferences.getInstance();
+    await p.setBool(_easy, v);
+  }
 
   static Future<Map<String, String>> caregiver() async {
     final p = await SharedPreferences.getInstance();
