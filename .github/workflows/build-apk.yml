@@ -51,39 +51,6 @@ jobs:
       - name: Get dependencies
         run: flutter pub get
 
-      - name: Align flutter_timezone Kotlin JVM target
-        shell: bash
-        run: |
-          python3 - <<'PYCODE'
-          from pathlib import Path
-          import sys
-          roots = [Path.home() / '.pub-cache' / 'hosted' / 'pub.dev']
-          files = []
-          for root in roots:
-              if root.exists():
-                  files.extend(root.glob('flutter_timezone-*/android/build.gradle'))
-                  files.extend(root.glob('flutter_timezone-*/android/build.gradle.kts'))
-          if not files:
-              print('Could not locate flutter_timezone Android Gradle file in pub cache.')
-              sys.exit(1)
-          for path in files:
-              text = path.read_text()
-              updated = text
-              updated = updated.replace("jvmTarget = '1.8'", "jvmTarget = '11'")
-              updated = updated.replace('jvmTarget = \"1.8\"', 'jvmTarget = \"11\"')
-              updated = updated.replace('JavaVersion.VERSION_1_8', 'JavaVersion.VERSION_11')
-              updated = updated.replace('JvmTarget.JVM_1_8', 'JvmTarget.JVM_11')
-              if updated == text:
-                  print(f'No recognized Kotlin JVM target setting found in {path}; leaving file unchanged.')
-                  print('Relevant lines:')
-                  for line in text.splitlines():
-                      if 'jvmTarget' in line or 'kotlinOptions' in line or 'VERSION_1_8' in line:
-                          print(line)
-                  sys.exit(1)
-              path.write_text(updated)
-              print(f'Updated Kotlin JVM target to 11 in {path}')
-          PYCODE
-
       - name: Build release APK
         run: flutter build apk --release
 
