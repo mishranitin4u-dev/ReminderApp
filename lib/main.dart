@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter_timezone/flutter_timezone.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:speech_to_text/speech_to_text.dart' as stt;
 import 'package:url_launcher/url_launcher.dart';
@@ -51,10 +50,10 @@ Future<void> main() async {
 class NotificationService {
   static Future<void> init() async {
     tz.initializeTimeZones();
-    try {
-      final zone = await FlutterTimezone.getLocalTimezone();
-      tz.setLocalLocation(tz.getLocation(zone));
-    } catch (_) {}
+    // The initial release targets India. Avoid the flutter_timezone plugin,
+    // which currently fails Kotlin compilation with the generated Android build.
+    // Keep scheduled reminders aligned with Indian Standard Time.
+    tz.setLocalLocation(tz.getLocation('Asia/Kolkata'));
 
     const settings = InitializationSettings(
       android: AndroidInitializationSettings('@mipmap/ic_launcher'),
